@@ -9,14 +9,14 @@
           <router-link to="/game" class="btn btn-primary">
             <span class="btn-icon">⚔️</span>
             <div class="btn-text-wrapper">
-              <span class="btn-text">开始游戏</span>
+              <span class="btn-text">快速开始</span>
               <span class="btn-sub">匹配AI玩家</span>
             </div>
           </router-link>
           <router-link to="/game" class="btn btn-secondary">
             <span class="btn-icon">🔍</span>
             <div class="btn-text-wrapper">
-              <span class="btn-text">查找房间</span>
+              <span class="btn-text">创建房间</span>
               <span class="btn-sub">自定义游戏</span>
             </div>
           </router-link>
@@ -65,53 +65,86 @@
           <div class="news-item">
             <span class="news-tag tag-new">新</span>
             <span class="news-content">全新角色「噩梦之影」上线！上线！</span>
-            <span class="news-date">2024-05-20</span>
+            <span class="news-date">05-20</span>
           </div>
           <div class="news-item">
             <span class="news-tag tag-event">活</span>
             <span class="news-content">周末双倍经验活动开启！</span>
-            <span class="news-date">2024-05-18</span>
+            <span class="news-date">05-18</span>
           </div>
           <div class="news-item">
             <span class="news-tag tag-update">更</span>
             <span class="news-content">版本更新公告 (v1.2.0)</span>
-            <span class="news-date">2024-05-15</span>
+            <span class="news-date">05-15</span>
           </div>
         </div>
       </div>
       <div class="pass-section">
         <div class="pass-header">
+          <span class="pass-icon">📜</span>
           <span class="pass-title">赛季通行证</span>
         </div>
         <div class="pass-desc">完成任务，领取丰厚奖励！</div>
         <button class="btn-pass">立即查看</button>
         <div class="pass-decoration">
-          <span class="pass-icon">🎁</span>
+          <span class="pass-icon-large">🎁</span>
         </div>
       </div>
     </section>
 
-    <footer class="footer">
-      <div class="footer-content">
-        <div class="footer-logo">
-          <span class="logo-icon">🐺</span>
-          <span class="logo-text">AI狼人杀</span>
-          <span class="logo-sub">智慧与谎言的较量</span>
-        </div>
-        <div class="footer-links">
-          <span>服务条款</span>
-          <span>隐私政策</span>
-          <span>联系我们</span>
-        </div>
-        <div class="footer-copyright">© 2024 AI狼人杀 All Rights Reserved.</div>
+    <section class="quick-join">
+      <div class="quick-header">
+        <span class="quick-icon">🔥</span>
+        <span class="quick-title">快速加入</span>
+        <span class="quick-refresh">🔄 换一批</span>
       </div>
-    </footer>
+      <div class="rooms-grid">
+        <div class="room-item" v-for="room in rooms" :key="room.id">
+          <div class="room-info">
+            <div class="room-name">{{ room.name }}</div>
+            <div class="room-players">{{ room.players }}/{{ room.maxPlayers }}</div>
+          </div>
+          <div class="room-tags">
+            <span :class="['room-tag', room.type]">{{ room.typeText }}</span>
+            <span :class="['room-tag', room.level]">{{ room.levelText }}</span>
+          </div>
+          <button class="join-btn">加入</button>
+        </div>
+      </div>
+    </section>
+
+    <nav class="bottom-nav">
+      <router-link to="/" class="nav-item active">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-text">首页</span>
+      </router-link>
+      <router-link to="/game" class="nav-item">
+        <span class="nav-icon">🏠</span>
+        <span class="nav-text">房间</span>
+      </router-link>
+      <span class="nav-item">
+        <span class="nav-icon">💬</span>
+        <span class="nav-text">消息</span>
+      </span>
+      <span class="nav-item">
+        <span class="nav-icon">👤</span>
+        <span class="nav-text">我的</span>
+      </span>
+    </nav>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+
 const heroBg = ref('/src/assets/index-wolfgame.jpeg')
+
+const rooms = ref([
+  { id: 1, name: '12人标准场', players: 9, maxPlayers: 12, type: 'standard', typeText: '标准场', level: 'normal', levelText: '平民局' },
+  { id: 2, name: '9人进阶场', players: 6, maxPlayers: 9, type: 'advanced', typeText: '进阶场', level: 'expert', levelText: '高手场' },
+  { id: 3, name: '6人娱乐场', players: 3, maxPlayers: 6, type: 'entertainment', typeText: '娱乐场', level: 'casual', levelText: '娱乐场' },
+  { id: 4, name: '12人标准场', players: 8, maxPlayers: 12, type: 'standard', typeText: '标准场', level: 'normal', levelText: '平民局' }
+])
 </script>
 
 <style scoped>
@@ -124,8 +157,8 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 .hero {
   position: relative;
   width: 100%;
-  height: calc(70vh);
-  min-height: 500px;
+  height: calc(55vh);
+  min-height: 400px;
   overflow: hidden;
   margin-top: -1px;
 }
@@ -158,15 +191,91 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
   background: linear-gradient(180deg, rgba(0, 0, 0, 0.4) 0%, rgba(15, 12, 41, 0.7) 100%);
 }
 
+.hero-title {
+  margin-bottom: 1rem;
+}
 
+.title {
+  font-size: 1.8rem;
+  font-weight: 900;
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.15rem;
+}
+
+.title-ai {
+  color: #ffd700;
+  text-shadow: 2px 2px 0 #b8860b, 4px 4px 0 rgba(0, 0, 0, 0.3);
+  font-size: 1.3rem;
+}
+
+.title-main {
+  color: #fff;
+  text-shadow: 2px 2px 0 #8b5cf6, 4px 4px 0 rgba(0, 0, 0, 0.3);
+  font-size: 2rem;
+  letter-spacing: -0.05em;
+}
+
+.subtitle {
+  font-size: 0.5rem;
+  color: #c0c0c0;
+  margin: 0.3rem 0 0;
+  letter-spacing: 0.1em;
+}
+
+.campfire-area {
+  margin-top: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.campfire {
+  position: relative;
+}
+
+.fire {
+  font-size: 1.8rem;
+  animation: fireFlicker 0.4s ease-in-out infinite alternate;
+}
+
+@keyframes fireFlicker {
+  0% { transform: scale(1); opacity: 0.9; }
+  100% { transform: scale(1.1); opacity: 1; }
+}
+
+.characters-row {
+  display: flex;
+  gap: 0.6rem;
+}
+
+.char {
+  font-size: 1.1rem;
+  animation: charBreathe 2s ease-in-out infinite;
+}
+
+.char:nth-child(1) { animation-delay: 0s; }
+.char:nth-child(2) { animation-delay: 0.3s; }
+.char:nth-child(3) { animation-delay: 0.6s; }
+.char:nth-child(4) { animation-delay: 0.9s; }
+.char:nth-child(5) { animation-delay: 1.2s; }
+.char:nth-child(6) { animation-delay: 1.5s; }
+
+@keyframes charBreathe {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
 
 .buttons {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.7rem;
   width: 100%;
   max-width: 267px;
-  margin: 5rem auto 0;
+  margin: 4rem auto 0;
 }
 
 @media (min-width: 768px) {
@@ -178,11 +287,11 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 }
 
 .btn {
-  padding: 0.65rem 1.8rem;
+  padding: 0.8rem 1.8rem;
   border: none;
   border-radius: 5px;
   font-family: inherit;
-  font-size: 0.85rem;
+  font-size: 1rem;
   cursor: pointer;
   display: flex;
   flex-direction: row;
@@ -193,7 +302,7 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
   overflow: hidden;
   text-decoration: none;
   width: 100%;
-  font-weight: bold;
+  font-weight: 900;
   letter-spacing: 0.03em;
   image-rendering: pixelated;
   line-height: 1.3;
@@ -247,17 +356,17 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 }
 
 .btn-icon {
-  font-size: 1.3rem;
+  font-size: 1.6rem;
 }
 
 .btn-text {
   font-weight: 900;
-  font-size: 1rem;
+  font-size: 1.2rem;
 }
 
 .btn-sub {
-  font-size: 0.65rem;
-  font-weight: 700;
+  font-size: 0.85rem;
+  font-weight: 800;
   opacity: 0.9;
 }
 
@@ -340,7 +449,7 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 }
 
 .features {
-  padding: 2rem 1rem;
+  padding: 1rem 1rem;
   background: rgba(0, 0, 0, 0.3);
 }
 
@@ -366,20 +475,20 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 
 .features-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: 1rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
 }
 
 @media (min-width: 768px) {
   .features-grid {
     grid-template-columns: repeat(4, 1fr);
-    gap: 1.5rem;
+    gap: 0.8rem;
   }
 }
 
 .feature-card {
-  padding: 1.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.8rem 0.5rem;
+  border-radius: 6px;
   text-align: center;
   border: 2px solid rgba(255, 255, 255, 0.1);
   transition: all 0.3s ease;
@@ -436,28 +545,30 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 
 .feature-icon {
   font-size: 2rem;
-  margin-bottom: 0.8rem;
+  margin-bottom: 0.5rem;
 }
 
 .feature-title {
   color: #fff;
-  font-size: 0.85rem;
-  font-weight: bold;
-  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 900;
+  margin-bottom: 0.4rem;
 }
 
 .feature-desc {
   color: #c9c9ff;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 800;
   line-height: 1.6;
+  text-align: justify;
+  text-align-last: center;
 }
 
 .news-pass {
-  padding: 2rem 1rem;
+  padding: 1rem 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 @media (min-width: 768px) {
@@ -477,8 +588,8 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 
 .news-section {
   background: rgba(0, 0, 0, 0.4);
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: 6px;
+  padding: 0.8rem;
   border: 2px solid #4a3f8a;
 }
 
@@ -486,38 +597,38 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.2rem;
+  margin-bottom: 0.6rem;
 }
 
 .news-icon {
-  font-size: 0.8rem;
+  font-size: 0.95rem;
 }
 
 .news-title {
   color: #ffd700;
-  font-size: 0.85rem;
-  font-weight: bold;
+  font-size: 0.95rem;
+  font-weight: 900;
 }
 
 .news-more {
   color: #c9c9ff;
-  font-size: 0.65rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 800;
   cursor: pointer;
 }
 
 .news-list {
   display: flex;
   flex-direction: column;
-  gap: 0.8rem;
+  gap: 0.4rem;
 }
 
 .news-item {
   display: flex;
   align-items: center;
-  gap: 0.8rem;
-  padding: 0.5rem;
-  border-radius: 4px;
+  gap: 0.5rem;
+  padding: 0.3rem;
+  border-radius: 3px;
   transition: background 0.2s ease;
 }
 
@@ -526,14 +637,14 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 }
 
 .news-tag {
-  width: 28px;
-  height: 28px;
-  border-radius: 4px;
+  width: 30px;
+  height: 30px;
+  border-radius: 3px;
   display: flex;
   justify-content: center;
   align-items: center;
-  font-size: 0.55rem;
-  font-weight: bold;
+  font-size: 0.65rem;
+  font-weight: 900;
   color: #fff;
   flex-shrink: 0;
 }
@@ -554,8 +665,8 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 .news-content {
   flex: 1;
   color: #fff;
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 800;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -563,65 +674,70 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 
 .news-date {
   color: #aaa;
-  font-size: 0.55rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 800;
   flex-shrink: 0;
 }
 
 .pass-section {
   background: linear-gradient(135deg, rgba(255, 215, 0, 0.15) 0%, rgba(180, 140, 0, 0.25) 100%);
-  border-radius: 8px;
-  padding: 1.5rem;
+  border-radius: 6px;
+  padding: 0.8rem;
   border: 2px solid #daa520;
   position: relative;
   overflow: hidden;
 }
 
 .pass-header {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.3rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pass-icon {
+  font-size: 0.95rem;
 }
 
 .pass-title {
   color: #ffd700;
   font-size: 0.95rem;
-  font-weight: bold;
+  font-weight: 900;
 }
 
 .pass-desc {
   color: #fff;
-  font-size: 0.7rem;
-  font-weight: 600;
-  margin-bottom: 1rem;
+  font-size: 0.75rem;
+  font-weight: 800;
+  margin-bottom: 0.6rem;
 }
 
 .btn-pass {
   background: linear-gradient(180deg, #ffd700 0%, #daa520 100%);
   color: #1a1a2e;
   border: none;
-  border-radius: 6px;
-  padding: 0.7rem 2.5rem;
+  border-radius: 4px;
+  padding: 0.55rem 1.5rem;
   font-family: inherit;
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   cursor: pointer;
   transition: all 0.3s ease;
-  font-weight: bold;
+  font-weight: 900;
 }
 
 .btn-pass:hover {
   background: linear-gradient(180deg, #fffacd 0%, #ffd700 100%);
-  transform: translateY(-2px);
 }
 
 .pass-decoration {
   position: absolute;
-  top: 10%;
+  top: 15%;
   right: 10%;
 }
 
-.pass-icon {
-  font-size: 3rem;
-  opacity: 0.4;
-  animation: bounce 2s ease-in-out infinite;
+.pass-icon-large {
+  font-size: 2rem;
+  opacity: 0.3;
 }
 
 @keyframes bounce {
@@ -683,5 +799,168 @@ const heroBg = ref('/src/assets/index-wolfgame.jpeg')
 .footer-copyright {
   color: #666;
   font-size: 0.45rem;
+}
+
+.quick-join {
+  padding: 0.8rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  padding-bottom: 70px;
+}
+
+.quick-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.quick-icon {
+  font-size: 1rem;
+}
+
+.quick-title {
+  color: #ffd700;
+  font-size: 1rem;
+  font-weight: 900;
+  flex: 1;
+  margin-left: 0.5rem;
+}
+
+.quick-refresh {
+  color: #c9c9ff;
+  font-size: 0.8rem;
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.rooms-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.6rem;
+}
+
+@media (min-width: 768px) {
+  .rooms-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.8rem;
+  }
+}
+
+.room-item {
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 0.8rem;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.room-info {
+  margin-bottom: 0.6rem;
+}
+
+.room-name {
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 900;
+  margin-bottom: 0.3rem;
+}
+
+.room-players {
+  color: #aaa;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.room-tags {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 0.6rem;
+}
+
+.room-tag {
+  font-size: 0.65rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 2px;
+  font-weight: 900;
+}
+
+.room-tag.standard {
+  background: rgba(255, 215, 0, 0.2);
+  color: #ffd700;
+}
+
+.room-tag.advanced {
+  background: rgba(140, 80, 255, 0.2);
+  color: #9f5fff;
+}
+
+.room-tag.entertainment {
+  background: rgba(255, 165, 0, 0.2);
+  color: #ffa500;
+}
+
+.room-tag.normal {
+  background: rgba(100, 200, 100, 0.2);
+  color: #64c864;
+}
+
+.room-tag.expert {
+  background: rgba(255, 100, 100, 0.2);
+  color: #ff6464;
+}
+
+.room-tag.casual {
+  background: rgba(100, 180, 255, 0.2);
+  color: #64b4ff;
+}
+
+.join-btn {
+  width: 100%;
+  background: linear-gradient(180deg, #ffd700 0%, #daa520 100%);
+  color: #1a1a2e;
+  border: none;
+  border-radius: 3px;
+  padding: 0.6rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, rgba(30, 30, 50, 0.98) 0%, rgba(20, 20, 40, 0.99) 100%);
+  border-top: 2px solid #4a3f8a;
+  display: flex;
+  justify-content: space-around;
+  padding: 0.4rem 0;
+  padding-bottom: calc(0.4rem + env(safe-area-inset-bottom));
+  z-index: 100;
+}
+
+.nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 0.2rem 0.8rem;
+  cursor: pointer;
+  text-decoration: none;
+  color: #888;
+}
+
+.nav-item.active {
+  color: #ffd700;
+}
+
+.nav-icon {
+  font-size: 1.4rem;
+}
+
+.nav-text {
+  font-size: 0.65rem;
+  font-weight: 800;
 }
 </style>
