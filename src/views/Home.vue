@@ -169,12 +169,23 @@ const rooms = ref([
   left: 0;
   width: 100%;
   height: 100%;
+  opacity: 0;
+  animation: fadeIn 0.6s ease forwards;
 }
 
 .hero-bg img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .hero-content {
@@ -306,6 +317,22 @@ const rooms = ref([
   letter-spacing: 0.03em;
   image-rendering: pixelated;
   line-height: 1.3;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(-20px);
+  animation: slideIn 0.6s ease forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .btn-text-wrapper {
@@ -321,6 +348,7 @@ const rooms = ref([
   border: 3px solid #9a7510;
   box-shadow: 0 3px 0 #9a7510, 0 6px 0 #6a500a, inset 0 2px 0 rgba(255, 255, 255, 0.3);
   text-shadow: 1px 1px 0 rgba(255, 255, 255, 0.4);
+  animation-delay: 0.1s;
 }
 
 .btn-primary:hover {
@@ -341,6 +369,7 @@ const rooms = ref([
   border: 3px solid #5a3a9a;
   box-shadow: 0 3px 0 #5a3a9a, 0 6px 0 #3a2a6a, inset 0 2px 0 rgba(255, 255, 255, 0.2);
   text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.4);
+  animation-delay: 0.2s;
 }
 
 .btn-secondary:hover {
@@ -455,10 +484,27 @@ const rooms = ref([
 
 .section-title-wrapper {
   display: flex;
-  justify-content: center;
   align-items: center;
-  gap: 1rem;
+  justify-content: center;
+  gap: 0.5rem;
   margin-bottom: 1.5rem;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(-10px);
+  animation: slideInTitle 0.6s ease forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes slideInTitle {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .section-icon {
@@ -494,6 +540,27 @@ const rooms = ref([
   transition: all 0.3s ease;
   position: relative;
   overflow: hidden;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideInCard 0.2s ease forwards;
+}
+
+.card-ai { animation-delay: 0.4s; }
+.card-role { animation-delay: 0.45s; }
+.card-voice { animation-delay: 0.5s; }
+.card-stats { animation-delay: 0.55s; }
+
+@keyframes slideInCard {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .feature-card::before {
@@ -569,6 +636,23 @@ const rooms = ref([
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideInSection 0.3s ease forwards;
+  animation-delay: 0.8s;
+}
+
+@keyframes slideInSection {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (min-width: 768px) {
@@ -598,6 +682,12 @@ const rooms = ref([
   justify-content: space-between;
   align-items: center;
   margin-bottom: 0.6rem;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(-5px);
+  animation: slideInTitle 0.2s ease forwards;
+  animation-delay: 0.9s;
 }
 
 .news-icon {
@@ -630,6 +720,26 @@ const rooms = ref([
   padding: 0.3rem;
   border-radius: 3px;
   transition: background 0.2s ease;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: slideInItem 0.15s ease forwards;
+}
+
+.news-item:nth-child(1) { animation-delay: 1.0s; }
+.news-item:nth-child(2) { animation-delay: 1.05s; }
+.news-item:nth-child(3) { animation-delay: 1.1s; }
+
+@keyframes slideInItem {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
 }
 
 .news-item:hover {
@@ -686,6 +796,12 @@ const rooms = ref([
   border: 2px solid #daa520;
   position: relative;
   overflow: hidden;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateX(10px);
+  animation: slideInItem 0.2s ease forwards;
+  animation-delay: 0.95s;
 }
 
 .pass-header {
@@ -805,6 +921,12 @@ const rooms = ref([
   padding: 0.8rem 1rem;
   background: rgba(0, 0, 0, 0.3);
   padding-bottom: 70px;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideInSection 0.3s ease forwards;
+  animation-delay: 1.2s;
 }
 
 .quick-header {
@@ -812,6 +934,12 @@ const rooms = ref([
   align-items: center;
   justify-content: space-between;
   margin-bottom: 1rem;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(-5px);
+  animation: slideInTitle 0.2s ease forwards;
+  animation-delay: 1.3s;
 }
 
 .quick-icon {
@@ -851,6 +979,27 @@ const rooms = ref([
   border-radius: 6px;
   padding: 0.8rem;
   border: 2px solid rgba(255, 255, 255, 0.1);
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(10px);
+  animation: slideInCard 0.15s ease forwards;
+}
+
+.room-item:nth-child(1) { animation-delay: 1.4s; }
+.room-item:nth-child(2) { animation-delay: 1.45s; }
+.room-item:nth-child(3) { animation-delay: 1.5s; }
+.room-item:nth-child(4) { animation-delay: 1.55s; }
+
+@keyframes slideInCard {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .room-info {
@@ -938,6 +1087,23 @@ const rooms = ref([
   padding: 0.4rem 0;
   padding-bottom: calc(0.4rem + env(safe-area-inset-bottom));
   z-index: 100;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(20px);
+  animation: slideUp 0.6s ease forwards;
+  animation-delay: 0.3s;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .nav-item {

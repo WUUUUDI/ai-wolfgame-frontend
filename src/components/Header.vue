@@ -78,6 +78,23 @@ const toggleMobileMenu = () => {
   padding: 0.75rem 1rem;
   min-height: 70px;
   z-index: 100;
+  
+  /* 滑入动画 */
+  opacity: 0;
+  transform: translateY(-20px);
+  animation: slideDown 0.6s ease forwards;
+  animation-delay: 0s;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .header-content {
