@@ -6,20 +6,38 @@
       </div>
       <div class="hero-content">
         <div class="buttons">
-          <router-link to="/game" class="btn btn-primary">
-            <span class="btn-icon">⚔️</span>
-            <div class="btn-text-wrapper">
-              <span class="btn-text">快速开始</span>
-              <span class="btn-sub">匹配AI玩家</span>
-            </div>
-          </router-link>
-          <router-link to="/game" class="btn btn-secondary">
-            <span class="btn-icon">🔍</span>
-            <div class="btn-text-wrapper">
-              <span class="btn-text">创建房间</span>
-              <span class="btn-sub">自定义游戏</span>
-            </div>
-          </router-link>
+          <template v-if="isLoggedIn">
+            <router-link to="/game" class="btn btn-primary">
+              <span class="btn-icon">⚔️</span>
+              <div class="btn-text-wrapper">
+                <span class="btn-text">快速开始</span>
+                <span class="btn-sub">匹配AI玩家</span>
+              </div>
+            </router-link>
+            <router-link to="/game" class="btn btn-secondary">
+              <span class="btn-icon">🔍</span>
+              <div class="btn-text-wrapper">
+                <span class="btn-text">创建房间</span>
+                <span class="btn-sub">自定义游戏</span>
+              </div>
+            </router-link>
+          </template>
+          <template v-else>
+            <button class="btn btn-primary" @click="openLoginModal('login')">
+              <span class="btn-icon">🔐</span>
+              <div class="btn-text-wrapper">
+                <span class="btn-text">登录</span>
+                <span class="btn-sub">登录游戏</span>
+              </div>
+            </button>
+            <button class="btn btn-secondary" @click="openLoginModal('register')">
+              <span class="btn-icon">📝</span>
+              <div class="btn-text-wrapper">
+                <span class="btn-text">注册</span>
+                <span class="btn-sub">创建账号</span>
+              </div>
+            </button>
+          </template>
         </div>
       </div>
     </section>
@@ -131,13 +149,59 @@
         <span class="nav-text">我的</span>
       </span>
     </nav>
+    
+    <LoginModal
+      :visible="showLoginModal"
+      :initial-mode="loginMode"
+      @close="closeLoginModal"
+      @success="handleLoginSuccess"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, inject, watch } from 'vue'
+import LoginModal from '../components/LoginModal.vue'
+import { authApi } from '../services/api'
 
 const heroBg = ref('/src/assets/index-wolfgame.jpeg')
+
+const isLoggedIn = ref(false)
+const currentUser = ref(null)
+const showLoginModal = ref(false)
+const loginMode = ref('login')
+const reloadKey = inject('reloadKey')
+
+const checkLoginStatus = () => {
+  isLoggedIn.value = authApi.isLoggedIn()
+  currentUser.value = authApi.getCurrentUser()
+}
+
+onMounted(() => {
+  checkLoginStatus()
+})
+
+watch(() => reloadKey.value, () => {
+  checkLoginStatus()
+})
+
+const openLoginModal = (mode = 'login') => {
+  loginMode.value = mode
+  showLoginModal.value = true
+}
+
+const closeLoginModal = () => {
+  showLoginModal.value = false
+}
+
+const handleLoginSuccess = () => {
+  checkLoginStatus()
+}
+
+const handleLogout = () => {
+  authApi.logout()
+  checkLoginStatus()
+}
 
 const rooms = ref([
   { id: 1, name: '12人标准场', players: 9, maxPlayers: 12, type: 'standard', typeText: '标准场', level: 'normal', levelText: '平民局' },

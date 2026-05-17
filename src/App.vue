@@ -1,5 +1,27 @@
 <script setup>
+import { ref, provide } from 'vue'
 import Header from './components/Header.vue'
+import LoginModal from './components/LoginModal.vue'
+
+const showLoginModal = ref(false)
+const loginMode = ref('login')
+const reloadKey = ref(0)
+
+const openLoginModal = (mode = 'login') => {
+  loginMode.value = mode
+  showLoginModal.value = true
+}
+
+const closeLoginModal = () => {
+  showLoginModal.value = false
+}
+
+const handleLoginSuccess = () => {
+  showLoginModal.value = false
+  reloadKey.value++
+}
+
+provide('reloadKey', reloadKey)
 </script>
 
 <template>
@@ -8,6 +30,13 @@ import Header from './components/Header.vue'
     <main class="main-content">
       <router-view />
     </main>
+    
+    <LoginModal
+      :visible="showLoginModal"
+      :initial-mode="loginMode"
+      @close="closeLoginModal"
+      @success="handleLoginSuccess"
+    />
   </div>
 </template>
 

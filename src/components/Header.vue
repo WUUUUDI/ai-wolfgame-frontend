@@ -24,10 +24,11 @@
           </li>
         </ul>
       </nav>
-      <div class="user-info">
+      <div v-if="isLoggedIn" class="user-info">
         <span class="user-avatar">👤</span>
-        <span class="user-name">玩家1234</span>
-        <span class="user-level">Lv.12</span>
+        <span class="user-name">{{ currentUser?.username || '玩家' }}</span>
+        <span class="user-level">Lv.{{ currentUser?.level || 1 }}</span>
+        <button class="logout-btn" @click="handleLogout">退出</button>
       </div>
       <button class="mobile-menu-btn" @click="toggleMobileMenu">
         <span></span>
@@ -52,19 +53,50 @@
         <li>
           <span class="mobile-nav-item">关于我们</span>
         </li>
+        <li v-if="isLoggedIn">
+          <span class="mobile-nav-item" @click="handleLogout">退出登录</span>
+        </li>
+        <li v-if="!isLoggedIn">
+          <span class="mobile-nav-item" @click="$emit('openLogin'); mobileMenuOpen = false">登录</span>
+        </li>
+        <li v-if="!isLoggedIn">
+          <span class="mobile-nav-item" @click="$emit('openRegister'); mobileMenuOpen = false">注册</span>
+        </li>
       </ul>
     </div>
   </header>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted, inject, watch } from 'vue'
+import { authApi } from '../services/api'
 
 const mobileMenuOpen = ref(false)
+const isLoggedIn = ref(false)
+const currentUser = ref(null)
+const reloadKey = inject('reloadKey')
 
 const toggleMobileMenu = () => {
   mobileMenuOpen.value = !mobileMenuOpen.value
 }
+
+const checkLoginStatus = () => {
+  isLoggedIn.value = authApi.isLoggedIn()
+  currentUser.value = authApi.getCurrentUser()
+}
+
+const handleLogout = () => {
+  authApi.logout()
+  checkLoginStatus()
+}
+
+onMounted(() => {
+  checkLoginStatus()
+})
+
+watch(() => reloadKey.value, () => {
+  checkLoginStatus()
+})
 </script>
 
 <style scoped>
@@ -198,6 +230,23 @@ const toggleMobileMenu = () => {
 
 .user-level {
   color: #ffd700;
+}
+
+.logout-btn {
+  background: linear-gradient(180deg, #ff6b6b 0%, #ee5a5a 100%);
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 0.4rem 0.8rem;
+  font-family: 'Press Start 2P', monospace, sans-serif;
+  font-size: 0.6rem;
+  cursor: pointer;
+  margin-left: 0.5rem;
+  transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+  background: linear-gradient(180deg, #ff8787 0%, #ff6b6b 100%);
 }
 
 .mobile-menu-btn {
