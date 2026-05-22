@@ -14,7 +14,7 @@
                 <span class="btn-sub">匹配AI玩家</span>
               </div>
             </router-link>
-            <router-link to="/game" class="btn btn-secondary">
+            <router-link to="/create-room" class="btn btn-secondary">
               <span class="btn-icon">🔍</span>
               <div class="btn-text-wrapper">
                 <span class="btn-text">创建房间</span>

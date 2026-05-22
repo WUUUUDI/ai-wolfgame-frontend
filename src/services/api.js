@@ -80,4 +80,13 @@ export const authApi = {
   }
 }
 
+export const roomApi = {
+  createRoom: async (players) => {
+    const response = await api.post('/game/room/create', {
+      players
+    })
+    return response
+  }
+}
+
 export default api
