@@ -1,11 +1,14 @@
 <script setup>
-import { ref, provide } from 'vue'
+import { ref, provide, computed } from 'vue'
+import { useRoute } from 'vue-router'
 import Header from './components/Header.vue'
 import LoginModal from './components/LoginModal.vue'
 
+const route = useRoute()
 const showLoginModal = ref(false)
 const loginMode = ref('login')
 const reloadKey = ref(0)
+const hideHeader = computed(() => route.name === 'Game')
 
 const openLoginModal = (mode = 'login') => {
   loginMode.value = mode
@@ -26,7 +29,7 @@ provide('reloadKey', reloadKey)
 
 <template>
   <div class="app-container">
-    <Header />
+    <Header v-if="!hideHeader" />
     <main class="main-content">
       <router-view />
     </main>

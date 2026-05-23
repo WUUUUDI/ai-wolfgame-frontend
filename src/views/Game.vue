@@ -1,164 +1,180 @@
 <template>
-  <div class="game-page">
-    <div class="game-topbar">
-      <button class="back-btn" @click="leaveGame">← 离开</button>
-      <div class="phase-indicator" :class="phaseClass">
-        <span class="phase-icon">{{ phaseIcon }}</span>
-        <span class="phase-text">{{ gameState.phase || '等待中' }}</span>
-      </div>
-      <div class="round-info">
-        <span class="alive-count">存活 {{ aliveCount }}</span>
-      </div>
-    </div>
-
-    <div class="game-body">
-      <div class="players-col players-col-left">
-        <div
-          v-for="p in leftPlayers"
-          :key="p.id"
-          :class="['player-avatar', {
-            dead: !p.is_alive,
-            speaking: speakingId === p.id,
-            highlighted: highlightedId === p.id
-          }]"
-          @click="togglePlayerDetail(p.id)"
-        >
-          <span class="avatar-emoji">{{ getPlayerEmoji(p) }}</span>
-          <span class="avatar-name">{{ p.name }}</span>
-          <span v-if="!p.is_alive" class="avatar-dead">❌</span>
-          <span v-if="speakingId === p.id" class="avatar-speaking">🗣️</span>
+  <div class="game-screen">
+    <section class="upper-stage">
+      <header class="hud-top">
+        <button type="button" class="icon-square icon-back" @click="leaveGame">←</button>
+        <div class="hud-room">
+          <div class="hud-mode">{{ tableTitle }}</div>
+          <div class="hud-room-id">房间号: {{ roomId || '--' }}</div>
         </div>
-      </div>
+        <div class="hud-phase" :class="phaseClass">
+          <div class="hud-phase-round">{{ phaseRoundText }}</div>
+          <div class="hud-phase-name">{{ phaseStageName }}</div>
+        </div>
+        <div class="hud-tools">
+          <div class="icon-square">⚙</div>
+          <div class="icon-square">⋯</div>
+        </div>
+      </header>
 
-      <div class="center-area" ref="centerRef">
-        <div class="center-panel">
-          <div v-if="gameState.gameOver" class="game-over-banner">
-            <span class="gob-icon">🏆</span>
-            <span class="gob-text">{{ winnerText }} 获胜！</span>
-          </div>
+      <section class="battlefield">
+        <aside class="seat-column">
+          <button
+            v-for="player in leftPlayers"
+            :key="player.id"
+            type="button"
+            :class="['seat-card', 'seat-card-left', { dead: !player.is_alive, speaking: speakingId === player.id, highlighted: highlightedId === player.id }]"
+            @click="togglePlayerDetail(player.id)"
+          >
+            <span class="seat-badge">{{ playerSeatNumber(player) }}</span>
+            <span class="seat-avatar">
+              <img :src="playerAvatarSrc(player)" :alt="displaySeatPlayerName(player)" class="seat-avatar-image" />
+              <span class="seat-role" :class="roleColorClass(player)">{{ displayPlayerRole(player) }}</span>
+            </span>
+            <span class="seat-name">{{ displaySeatPlayerName(player) }}</span>
+            <span v-if="speakingId === player.id" class="seat-speak-mark">🎙</span>
+          </button>
+        </aside>
 
-          <div class="phase-banner" v-if="gameState.phase && !gameState.gameOver">
-            <span class="phase-big-icon">{{ phaseIcon }}</span>
-            <span class="phase-big-text">{{ phaseLabel }}</span>
-          </div>
+        <main class="stage-area">
+          <div class="stage-banner">{{ phaseNoticeText }}</div>
 
-          <div class="night-progress" v-if="gameState.phase === '夜晚' && nightRoleQueue.length">
-            <div class="night-roles">
-              <span
-                v-for="(role, idx) in nightRoleQueue"
-                :key="role"
-                :class="['night-chip', { done: idx < nightRoleIdx, active: idx === nightRoleIdx }]"
-              >
-                {{ nightRoleIcon(idx) }} {{ role }}
-              </span>
-            </div>
-          </div>
-
-          <div v-if="showVotePanel" class="vote-panel">
-              <div class="vote-panel-title">🗳️ 投票中</div>
-              <div class="vote-list">
-                <div
-                  v-for="(item, idx) in voteRanking"
-                  :key="item.id"
-                  :class="['vote-row', { top: idx === 0 }]"
-                >
-                  <span class="vote-rank">#{{ idx + 1 }}</span>
-                  <span class="vote-emoji">{{ item.player ? getPlayerEmoji(item.player) : '❓' }}</span>
-                  <span class="vote-name">{{ item.player ? item.player.name : item.id }}</span>
-                  <span class="vote-bar-wrap">
-                    <span class="vote-bar" :style="{ width: voteBarWidth(item.count) }"></span>
-                  </span>
-                  <span class="vote-count">{{ item.count }}票</span>
-                </div>
-              </div>
-              <div v-if="!voteRanking.length" class="vote-empty">暂无投票记录</div>
-            </div>
-
-          <div class="center-log" ref="logRef">
-            <div v-if="events.length === 0" class="log-empty">
-              <span class="log-empty-icon">🐺</span>
-              <span class="log-empty-text">等待游戏开始...</span>
-            </div>
-            <TransitionGroup name="log-item" tag="div" class="log-list">
+          <div v-if="showVotePanel" class="stage-vote-panel">
+            <div class="stage-vote-title">投票列表</div>
+            <div class="stage-vote-list">
               <div
-                v-for="evt in events"
-                :key="evt.id"
-                :class="['log-entry', `log-${evt.level}`]"
+                v-for="entry in voteRanking"
+                :key="entry.id"
+                :class="['stage-vote-item', { eliminated: String(gameState.votedOut) === String(entry.id) }]"
               >
-                <div class="log-time">{{ evt.time }}</div>
-                <div class="log-body">
-                  <span class="log-icon">{{ evt.icon }}</span>
-                  <span class="log-content">{{ evt.content }}</span>
-                </div>
+                <span class="stage-vote-player">{{ entry.player ? displaySeatPlayerName(entry.player) : `玩家${entry.id}` }}</span>
+                <span class="stage-vote-count">{{ entry.count }}票</span>
               </div>
-            </TransitionGroup>
-          </div>
-        </div>
-      </div>
-
-      <Teleport to="body">
-        <Transition name="modal">
-          <div v-if="detailPlayer" class="detail-overlay" @click.self="detailPlayer = null">
-            <div class="detail-modal">
-              <button class="detail-close" @click="detailPlayer = null">✕</button>
-              <div class="detail-header">
-                <span class="detail-emoji">{{ getPlayerEmoji(detailPlayer) }}</span>
-                <span class="detail-name">{{ detailPlayer.name }}</span>
-                <span v-if="!detailPlayer.is_alive" class="detail-dead-tag">❌ 已死亡</span>
-              </div>
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <span class="detail-label">角色</span>
-                  <span class="detail-value role">{{ detailPlayer.role || '?' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">难度</span>
-                  <span class="detail-value diff">{{ detailPlayer.difficulty || '-' }}</span>
-                </div>
-                <div class="detail-item">
-                  <span class="detail-label">策略</span>
-                  <span class="detail-value strategy">{{ detailPlayer.strategy || '-' }}</span>
-                </div>
-              </div>
-              <div v-if="detailPlayer.memories && detailPlayer.memories.length" class="detail-memories">
-                <div class="detail-memories-title">🧠 记忆</div>
-                <div
-                  v-for="(mem, i) in detailPlayer.memories"
-                  :key="i"
-                  class="memory-entry"
-                >{{ mem }}</div>
-              </div>
-              <div v-else class="detail-no-memories">暂无记忆</div>
+            </div>
+            <div v-if="gameState.votedOut" class="stage-vote-result">
+              已出局：{{ displaySeatPlayerName(findPlayer(gameState.votedOut) || { id: gameState.votedOut }) }}
             </div>
           </div>
-        </Transition>
-      </Teleport>
 
-      <div class="players-col players-col-right">
-        <div
-          v-for="p in rightPlayers"
-          :key="p.id"
-          :class="['player-avatar', {
-            dead: !p.is_alive,
-            speaking: speakingId === p.id,
-            highlighted: highlightedId === p.id
-          }]"
-          @click="togglePlayerDetail(p.id)"
-        >
-          <span class="avatar-emoji">{{ getPlayerEmoji(p) }}</span>
-          <span class="avatar-name">{{ p.name }}</span>
-          <span v-if="!p.is_alive" class="avatar-dead">❌</span>
-          <span v-if="speakingId === p.id" class="avatar-speaking">🗣️</span>
+          <div class="night-flow" v-else-if="gameState.phase === '夜晚' && nightRoleQueue.length">
+            <span
+              v-for="(role, idx) in nightRoleQueue"
+              :key="`${role}-${idx}`"
+              :class="['night-flow-chip', { done: idx < nightRoleIdx, active: idx === nightRoleIdx }]"
+            >
+              {{ nightRoleIcon(idx) }} {{ role }}
+            </span>
+          </div>
+
+          <div class="stage-visual"></div>
+        </main>
+
+        <aside class="seat-column">
+          <button
+            v-for="player in rightPlayers"
+            :key="player.id"
+            type="button"
+            :class="['seat-card', 'seat-card-right', { dead: !player.is_alive, speaking: speakingId === player.id, highlighted: highlightedId === player.id }]"
+            @click="togglePlayerDetail(player.id)"
+          >
+            <span class="seat-badge">{{ playerSeatNumber(player) }}</span>
+            <span class="seat-avatar">
+              <img :src="playerAvatarSrc(player)" :alt="displaySeatPlayerName(player)" class="seat-avatar-image" />
+              <span class="seat-role" :class="roleColorClass(player)">{{ displayPlayerRole(player) }}</span>
+            </span>
+            <span class="seat-name">{{ displaySeatPlayerName(player) }}</span>
+            <span v-if="speakingId === player.id" class="seat-speak-mark">🎙</span>
+          </button>
+        </aside>
+      </section>
+    </section>
+
+    <section class="action-panel">
+      <div class="action-portrait">
+        <span class="action-portrait-icon">{{ currentActionIcon }}</span>
+      </div>
+      <div class="action-main">
+        <div class="action-title">{{ currentActionTitle }}</div>
+        <div class="action-subtitle">{{ currentActionSubtitle }}</div>
+        <div class="action-progress">
+          <span v-for="(active, idx) in actionDots" :key="idx" :class="['action-dot', { active }]"></span>
         </div>
       </div>
-    </div>
-
-    <div class="game-bottom">
-      <div class="ws-status">
-        <span class="ws-dot" :class="{ connected: wsConnected }"></span>
-        <span>{{ wsConnected ? '已连接' : '连接中...' }}</span>
+      <div class="action-side">
+        <span class="action-side-icon">{{ currentActionSideIcon }}</span>
+        <span class="action-side-text">{{ currentActionButtonText }}</span>
       </div>
-    </div>
+    </section>
+
+    <section class="message-panel">
+      <div class="message-board" ref="logRef">
+        <div v-if="events.length === 0" class="message-empty">
+          <span class="message-empty-icon">🐺</span>
+          <span class="message-empty-text">等待游戏开始...</span>
+        </div>
+        <TransitionGroup name="message-item" tag="div" class="message-list">
+          <div v-for="evt in events" :key="evt.id" :class="['message-row', `message-${evt.level}`]">
+            <span class="message-prefix">{{ eventLabel(evt) }}</span>
+            <span class="message-content">{{ evt.content }}</span>
+          </div>
+        </TransitionGroup>
+      </div>
+      <button type="button" class="quick-speak-btn" @click="fillQuickMessage">快捷发言</button>
+    </section>
+
+    <footer class="chat-bar">
+      <input
+        v-model="chatDraft"
+        type="text"
+        class="chat-input"
+        placeholder="输入你想说的话..."
+        @keyup.enter="sendLocalMessage"
+      />
+      <button type="button" class="chat-send" @click="sendLocalMessage">发送</button>
+      <button type="button" class="chat-extra" title="送礼">🎁</button>
+      <button type="button" class="chat-extra" title="表情">😊</button>
+    </footer>
+
+    <Teleport to="body">
+      <Transition name="modal">
+        <div v-if="detailPlayer" class="detail-overlay" @click.self="detailPlayer = null">
+          <div class="detail-modal">
+            <button type="button" class="detail-close" @click="detailPlayer = null">✕</button>
+            <div class="detail-header">
+              <span class="detail-avatar">
+                <img :src="playerAvatarSrc(detailPlayer)" :alt="displayPlayerName(detailPlayer)" class="detail-avatar-image" />
+              </span>
+              <div class="detail-title-wrap">
+                <div class="detail-title">{{ displayPlayerName(detailPlayer) }}</div>
+                <div class="detail-subtitle" :class="roleColorClass(detailPlayer)">{{ displayPlayerRole(detailPlayer) }}</div>
+              </div>
+              <span v-if="!detailPlayer.is_alive" class="detail-dead-tag">已死亡</span>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">座位</span>
+                <span class="detail-value">{{ playerSeatNumber(detailPlayer) }}号</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">难度</span>
+                <span class="detail-value">{{ detailPlayer.difficulty || '-' }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">策略</span>
+                <span class="detail-value">{{ detailPlayer.strategy || '-' }}</span>
+              </div>
+            </div>
+            <div v-if="detailPlayer.memories && detailPlayer.memories.length" class="detail-memory-list">
+              <div class="detail-memory-title">记忆</div>
+              <div v-for="(memory, idx) in detailPlayer.memories" :key="idx" class="detail-memory-item">
+                {{ memory }}
+              </div>
+            </div>
+            <div v-else class="detail-empty">暂无记忆内容</div>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -168,16 +184,25 @@ import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const router = useRouter()
+const avatarModules = import.meta.glob('../assets/avatar_*.gif', { eager: true, import: 'default' })
+const avatarSources = Object.entries(avatarModules)
+  .sort((a, b) => {
+    const aNum = Number(a[0].match(/avatar_(\d+)\.gif$/)?.[1] || 0)
+    const bNum = Number(b[0].match(/avatar_(\d+)\.gif$/)?.[1] || 0)
+    return aNum - bNum
+  })
+  .map(([, src]) => src)
 
 const roomId = ref('')
 const wsConnected = ref(false)
 const events = ref([])
 const logRef = ref(null)
-const centerRef = ref(null)
 const detailPlayer = ref(null)
 const speakingId = ref(null)
 const highlightedId = ref(null)
 const gameStarted = ref(false)
+const phaseStep = ref(1)
+const chatDraft = ref('')
 
 let ws = null
 let eventIdCounter = 0
@@ -197,53 +222,64 @@ const gameState = reactive({
   witchAntidote: true,
   witchPoison: true,
   gameOver: false,
-  winner: null
+  winner: null,
+  globalMemory: ''
 })
 
 const players = ref([])
 
+const getSeatIndex = (player, fallback = 0) => {
+  if (typeof player?.seat === 'number') return player.seat
+  const numericId = parseInt(player?.id, 10)
+  if (!Number.isNaN(numericId) && numericId > 0) return numericId - 1
+  return fallback
+}
+
+const sortedPlayers = computed(() => {
+  return [...players.value]
+    .map((player, index) => ({ ...player, seat: getSeatIndex(player, index) }))
+    .sort((a, b) => getSeatIndex(a) - getSeatIndex(b))
+})
+
 const leftPlayers = computed(() => {
-  const all = players.value
-  const half = Math.ceil(all.length / 2)
-  return all.slice(0, half)
+  const half = Math.ceil(sortedPlayers.value.length / 2)
+  return sortedPlayers.value.slice(0, half)
 })
 
 const rightPlayers = computed(() => {
-  const all = players.value
-  const half = Math.ceil(all.length / 2)
-  return all.slice(half)
+  const half = Math.ceil(sortedPlayers.value.length / 2)
+  return sortedPlayers.value.slice(half).reverse()
 })
 
 const aliveCount = computed(() => players.value.filter(p => p.is_alive).length)
+const tableTitle = computed(() => `${players.value.length || 0}人标准场`)
 
 const phaseClass = computed(() => {
-  const p = gameState.phase
-  if (p === '夜晚') return 'phase-night'
-  if (p === '白天') return 'phase-day'
-  if (p === '游戏结束') return 'phase-over'
-  return ''
+  if (gameState.gameOver) return 'phase-over'
+  if (gameState.phase === '夜晚') return 'phase-night'
+  if (gameState.phase === '白天') return 'phase-day'
+  return 'phase-wait'
 })
 
-const phaseIcon = computed(() => {
-  if (gameState.phase === '夜晚') return '🌙'
-  if (gameState.phase === '白天') return '☀️'
-  if (gameState.gameOver) return '🏁'
-  return '⏳'
+const phaseStageName = computed(() => {
+  if (gameState.gameOver) return '结算阶段'
+  if (gameState.phase === '夜晚') return '夜晚阶段'
+  if (gameState.phase === '白天') return '白天阶段'
+  return '等待阶段'
 })
 
-const phaseLabel = computed(() => {
-  if (gameState.phase === '夜晚') return '夜晚阶段 - 请闭眼'
-  if (gameState.phase === '白天') return '白天阶段 - 自由讨论'
-  if (gameState.gameOver) return '游戏结束'
-  if (gameStarted.value) return '等待事件...'
-  return '准备连接...'
+const phaseRoundText = computed(() => {
+  if (gameState.gameOver) return '终局'
+  if (gameState.phase === '夜晚') return `第${phaseStep.value}夜`
+  if (gameState.phase === '白天') return `第${phaseStep.value}天`
+  return '准备中'
 })
 
 const winnerText = computed(() => {
   const w = gameState.winner
-  if (w === 'werewolf' || w === '狼人') return '🐺 狼人阵营'
-  if (w === 'villager' || w === '村民' || w === '好人') return '👥 村民阵营'
-  return w || ''
+  if (w === 'werewolf' || w === '狼人') return '狼人阵营'
+  if (w === 'villager' || w === '村民' || w === '好人') return '好人阵营'
+  return w || '未知阵营'
 })
 
 const voteRanking = computed(() => {
@@ -263,13 +299,10 @@ const showVotePanel = computed(() => {
   return Object.keys(gameState.votes).length > 0 && !gameState.gameOver
 })
 
-const voteBarWidth = (count) => {
-  const max = Math.max(...voteRanking.value.map(v => v.count), 1)
-  return `${Math.round((count / max) * 100)}%`
-}
-
 const nightRoleQueue = computed(() => gameState.nightRoleOrder || [])
 const nightRoleIdx = computed(() => gameState.currentNightRoleIdx || 0)
+const currentSpeaker = computed(() => findPlayer(speakingId.value))
+const currentNightRole = computed(() => nightRoleQueue.value[nightRoleIdx.value] || '')
 
 const nightRoleIcons = { '狼人': '🐺', '女巫': '🧪', '预言家': '🔮', '守卫': '🛡️' }
 
@@ -278,11 +311,40 @@ const nightRoleIcon = (idx) => {
   return nightRoleIcons[role] || '❓'
 }
 
-const playerEmojis = ['🐺', '🧙', '🔮', '🎭', '👻', '🦊', '🐻', '🦉', '🐍', '🦅', '🐗', '🦌']
+const playerEmojis = ['🐺', '🧙', '🔮', '�', '🎭', '🛡', '🐻', '🦉', '🐍', '🦅', '🐗', '🦌']
 
 const getPlayerEmoji = (p) => {
-  const seat = typeof p.seat === 'number' ? p.seat : parseInt(p.id) - 1
+  const seat = getSeatIndex(p)
   return playerEmojis[seat % playerEmojis.length] || '🤖'
+}
+
+const playerSeatNumber = (player) => getSeatIndex(player) + 1
+
+const displayPlayerName = (player) => player?.name || `玩家${playerSeatNumber(player)}`
+const displaySeatPlayerName = (player) => `玩家${playerSeatNumber(player)}`
+const playerAvatarSrc = (player) => {
+  if (!avatarSources.length) return ''
+  const index = Math.max(playerSeatNumber(player) - 1, 0) % avatarSources.length
+  return avatarSources[index]
+}
+
+const displayPlayerRole = (player) => {
+  if (!player) return '?'
+  return player.role || '?'
+}
+
+const roleColors = {
+  '狼人': 'role-werewolf',
+  '平民': 'role-villager',
+  '女巫': 'role-witch',
+  '猎人': 'role-hunter',
+  '守卫': 'role-guard',
+  '预言家': 'role-seer'
+}
+
+const roleColorClass = (player) => {
+  const role = player?.role
+  return roleColors[role] || ''
 }
 
 const addEvent = (icon, content, level = 'info') => {
@@ -307,20 +369,127 @@ const addEvent = (icon, content, level = 'info') => {
 
 const findPlayer = (id) => players.value.find(p => String(p.id) === String(id))
 
+const eventLabel = (evt) => {
+  if (evt.level === 'system') return '系统'
+  if (evt.level === 'phase') return '阶段'
+  if (evt.level === 'broadcast') return '法官'
+  if (evt.level === 'speech') return '发言'
+  if (evt.level === 'vote') return '投票'
+  if (evt.level === 'kill') return '出局'
+  if (evt.level === 'save') return '结果'
+  if (evt.level === 'warn' || evt.level === 'error') return '告警'
+  return '系统'
+}
+
 const togglePlayerDetail = (id) => {
   const p = findPlayer(id)
   detailPlayer.value = p ? { ...p } : null
 }
 
+const phaseNoticeText = computed(() => {
+  if (gameState.gameOver) return `${winnerText.value} 获胜`
+  if (gameState.phase === '夜晚') {
+    return gameState.killedTonight.length ? `昨夜死亡 ${gameState.killedTonight.length} 人` : '昨夜无人出局'
+  }
+  if (gameState.phase === '白天') {
+    if (gameState.votedOut) {
+      const player = findPlayer(gameState.votedOut)
+      return `${player ? displayPlayerName(player) : gameState.votedOut} 已出局`
+    }
+    return '白天讨论与投票中'
+  }
+  return wsConnected.value ? '等待法官指令' : '正在连接服务器'
+})
+
+const currentActionIcon = computed(() => {
+  if (gameState.gameOver) return '🏆'
+  if (showVotePanel.value) return '🗳️'
+  if (currentSpeaker.value) return '🎙️'
+  if (gameState.phase === '夜晚') return nightRoleIcons[currentNightRole.value] || '🐺'
+  if (gameState.phase === '白天') return '☀️'
+  return '⏳'
+})
+
+const currentActionTitle = computed(() => {
+  if (gameState.gameOver) return '游戏结束'
+  if (showVotePanel.value) return '请投出可疑目标'
+  if (currentSpeaker.value) return `${displayPlayerName(currentSpeaker.value)} 正在发言`
+  if (gameState.phase === '夜晚') return `${currentNightRole.value || '狼人'}请闭眼`
+  if (gameState.phase === '白天') return '自由讨论阶段'
+  return '等待游戏开始'
+})
+
+const currentActionSubtitle = computed(() => {
+  if (gameState.gameOver) return `最终结果：${winnerText.value}`
+  if (showVotePanel.value) {
+    const leader = voteRanking.value[0]
+    return leader ? `${leader.player ? displayPlayerName(leader.player) : leader.id} 暂时领先` : '所有存活玩家正在投票'
+  }
+  if (currentSpeaker.value) return '请留意下方发言与系统播报'
+  if (gameState.phase === '夜晚') return '请留意夜间结算信息'
+  if (gameState.phase === '白天') return '白天可查看发言、投票和放逐结果'
+  return wsConnected.value ? '已建立连接，等待初始化数据' : '连接建立中...'
+})
+
+const currentActionButtonText = computed(() => {
+  if (gameState.gameOver) return '查看结果'
+  if (showVotePanel.value) return '投票中'
+  if (currentSpeaker.value) return '发言中'
+  if (gameState.phase === '夜晚') return '闭眼中'
+  if (gameState.phase === '白天') return '讨论中'
+  return '待开始'
+})
+
+const currentActionSideIcon = computed(() => {
+  if (gameState.gameOver) return '🏁'
+  if (showVotePanel.value) return '✓'
+  if (currentSpeaker.value) return '…'
+  if (gameState.phase === '夜晚') return '🌙'
+  if (gameState.phase === '白天') return '☀'
+  return '○'
+})
+
+const actionDots = computed(() => {
+  let activeCount = 3
+  if (gameState.gameOver) activeCount = 10
+  else if (showVotePanel.value) activeCount = Math.min(Object.keys(gameState.votes || {}).length || 1, 10)
+  else if (gameState.phase === '夜晚') activeCount = Math.min((nightRoleIdx.value || 0) + 1, Math.max(nightRoleQueue.value.length, 1))
+  else if (gameState.phase === '白天') activeCount = currentSpeaker.value ? 7 : 5
+  return Array.from({ length: 10 }, (_, index) => index < activeCount)
+})
+
+const fillQuickMessage = () => {
+  if (currentSpeaker.value) {
+    chatDraft.value = `${displayPlayerName(currentSpeaker.value)} 正在发言。`
+    return
+  }
+  if (showVotePanel.value) {
+    chatDraft.value = '当前进入投票阶段。'
+    return
+  }
+  if (gameState.phase === '夜晚') {
+    chatDraft.value = '夜晚阶段进行中。'
+    return
+  }
+  chatDraft.value = '请继续观察场上局势。'
+}
+
+const sendLocalMessage = () => {
+  const content = chatDraft.value.trim()
+  if (!content) return
+  addEvent('💬', `我: "${content}"`, 'speech')
+  chatDraft.value = ''
+}
+
 const syncPhase = (data) => {
   if (data.phase && data.phase !== gameState.phase) {
-    const prev = gameState.phase
+    if (gameState.phase) phaseStep.value += 1
     gameState.phase = data.phase
     if (data.phase === '夜晚') {
       gameState.votes = {}
       addEvent('🌙', '进入夜晚阶段', 'phase')
     } else if (data.phase === '白天') {
-      addEvent('☀️', '天亮了！进入白天阶段', 'phase')
+      addEvent('☀️', '天亮了，进入白天阶段', 'phase')
     }
   }
 }
@@ -391,6 +560,7 @@ const handleInitGame = (data) => {
   gameState.winner = null
   gameState.votes = {}
   gameState.phase = data.phase || ''
+  phaseStep.value = 1
   Object.keys(speechStreams).forEach(k => delete speechStreams[k])
   players.value = mergePlayers(data.players || [])
   gameState.nightRoleOrder = data.night_role_order || []
@@ -448,7 +618,7 @@ const handleNightRole = (data) => {
       if (kills.length) {
         const targetId = kills[0][1]
         const target = findPlayer(targetId)
-        addEvent('🐺', `狼人决定击杀 ${target ? target.name : targetId}`, 'kill')
+        addEvent('🐺', `狼人决定击杀 ${target ? displayPlayerName(target) : targetId}`, 'kill')
         highlightedId.value = String(targetId)
         setTimeout(() => { highlightedId.value = null }, 3000)
       }
@@ -460,7 +630,7 @@ const handleNightRole = (data) => {
         }
         if (witchAction.use_poison && witchAction.target_id) {
           const target = findPlayer(witchAction.target_id)
-          addEvent('☠️', `女巫毒杀了 ${target ? target.name : witchAction.target_id}`, 'kill')
+          addEvent('☠️', `女巫毒杀了 ${target ? displayPlayerName(target) : witchAction.target_id}`, 'kill')
           highlightedId.value = String(witchAction.target_id)
           setTimeout(() => { highlightedId.value = null }, 3000)
         }
@@ -471,7 +641,7 @@ const handleNightRole = (data) => {
       const seerAction = Object.values(roleAction)[0]
       if (seerAction) {
         const target = findPlayer(seerAction)
-        addEvent('🔮', `预言家查验了 ${target ? target.name : seerAction}，身份: ${target ? target.role : '?'}`, 'info')
+        addEvent('🔮', `预言家查验了 ${target ? displayPlayerName(target) : seerAction}，身份: ${target ? target.role : '?'}`, 'info')
         highlightedId.value = String(seerAction)
         setTimeout(() => { highlightedId.value = null }, 2500)
       }
@@ -479,7 +649,7 @@ const handleNightRole = (data) => {
       const guardAction = Object.values(roleAction)[0]
       if (guardAction) {
         const target = findPlayer(guardAction)
-        addEvent('🛡️', `守卫守护了 ${target ? target.name : guardAction}`, 'info')
+        addEvent('🛡️', `守卫守护了 ${target ? displayPlayerName(target) : guardAction}`, 'info')
         highlightedId.value = String(guardAction)
         setTimeout(() => { highlightedId.value = null }, 2500)
       }
@@ -519,7 +689,7 @@ const handleNightResolve = (data) => {
   } else {
     killedTonight.forEach(id => {
       const p = findPlayer(id)
-      addEvent('💀', `${p ? p.name : id} 昨晚被杀害了`, 'kill')
+      addEvent('💀', `${p ? displayPlayerName(p) : id} 昨晚被杀害了`, 'kill')
     })
   }
 }
@@ -530,11 +700,21 @@ const handleStartSpeech = (data) => {
   }
 
   const speeches = data.speeches || []
+  // 从发言数据中更新玩家角色身份
+  speeches.forEach(s => {
+    const pid = String(s.player_id)
+    if (s.role) {
+      const player = findPlayer(pid)
+      if (player) {
+        player.role = s.role
+      }
+    }
+  })
   speeches.forEach(s => {
     const pid = String(s.player_id)
     const p = findPlayer(pid)
     if (p && !p.is_alive) return
-    const name = p ? p.name : `玩家${pid}`
+    const name = p ? displayPlayerName(p) : `玩家${pid}`
     const emoji = p ? getPlayerEmoji(p) : '🗣️'
     speakingId.value = pid
 
@@ -590,7 +770,7 @@ const handleProcessSpeech = (data) => {
     const pid = String(s.player_id)
     const p = findPlayer(pid)
     if (p && !p.is_alive) return
-    const name = p ? p.name : `玩家${pid}`
+    const name = p ? displayPlayerName(p) : `玩家${pid}`
     const emoji = p ? getPlayerEmoji(p) : '🗣️'
     const content = s.content || ''
     speakingId.value = pid
@@ -611,11 +791,11 @@ const handleCastVote = (data) => {
     const voter = findPlayer(voterId)
     const target = targetId ? findPlayer(targetId) : null
     if (targetId) {
-      addEvent('🗳️', `${voter ? voter.name : voterId} → ${target ? target.name : targetId}`, 'vote')
+      addEvent('🗳️', `${voter ? displayPlayerName(voter) : voterId} → ${target ? displayPlayerName(target) : targetId}`, 'vote')
       highlightedId.value = String(targetId)
       setTimeout(() => { highlightedId.value = null }, 1000)
     } else {
-      addEvent('🗳️', `${voter ? voter.name : voterId} 弃权`, 'vote')
+      addEvent('🗳️', `${voter ? displayPlayerName(voter) : voterId} 弃权`, 'vote')
     }
   })
 }
@@ -635,7 +815,7 @@ const handleVoteResolve = (data) => {
 
   if (votedOut) {
     const p = findPlayer(votedOut)
-    addEvent('💀', `${p ? p.name : votedOut} 被投票放逐！`, 'kill')
+    addEvent('💀', `${p ? displayPlayerName(p) : votedOut} 被投票放逐！`, 'kill')
     highlightedId.value = String(votedOut)
     setTimeout(() => { highlightedId.value = null }, 4000)
   }
@@ -657,13 +837,13 @@ const handleUpdateMemories = (data) => {
 const mergePlayers = (newPlayers) => {
   const oldMap = {}
   players.value.forEach(p => { oldMap[p.id] = p })
-  return newPlayers.map(p => {
+  return newPlayers.map((p, index) => {
     const pid = String(p.id)
     const old = oldMap[pid]
     if (old) {
-      return { ...old, ...p, id: pid, memories: old.memories }
+      return { ...old, ...p, id: pid, seat: p.seat !== undefined ? p.seat : old.seat, memories: old.memories }
     }
-    return { ...p, id: pid }
+    return { ...p, id: pid, seat: p.seat !== undefined ? p.seat : index }
   })
 }
 
@@ -702,6 +882,7 @@ onMounted(() => {
   gameState.winner = null
   gameState.votes = {}
   gameState.phase = ''
+  phaseStep.value = 1
   events.value = []
   Object.keys(speechStreams).forEach(k => delete speechStreams[k])
 
@@ -1482,5 +1663,798 @@ const leaveGame = () => {
   .center-panel { padding: 10px 12px; }
   .log-entry { font-size: 0.42rem; }
   .phase-big-text { font-size: 0.5rem; }
+}
+
+.game-screen {
+  height: 100vh;
+  height: 100dvh;
+  display: grid;
+  grid-template-rows: minmax(0, 1fr) 80px 118px 38px;
+  gap: 5px;
+  padding: 5px;
+  box-sizing: border-box;
+  overflow: hidden;
+  color: #f6f1ff;
+  background: #070b17;
+  font-family: 'Microsoft YaHei', Arial, sans-serif;
+}
+
+.upper-stage {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
+  position: relative;
+  padding: 3px;
+  border-radius: 16px;
+  overflow: hidden;
+}
+
+.upper-stage::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(7, 13, 31, 0.36) 0%, rgba(7, 13, 31, 0.18) 38%, rgba(7, 13, 31, 0.56) 100%),
+    url('../assets/room-background.png') center top / cover no-repeat;
+  z-index: 0;
+}
+
+.upper-stage > * {
+  position: relative;
+  z-index: 1;
+}
+
+.hud-top,
+.action-panel,
+.message-board,
+.quick-speak-btn,
+.chat-input,
+.chat-send,
+.chat-extra {
+  border: 1px solid rgba(126, 136, 182, 0.22);
+  background: linear-gradient(180deg, rgba(19, 28, 54, 0.92) 0%, rgba(12, 17, 37, 0.94) 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 8px 18px rgba(3, 8, 20, 0.28);
+}
+
+.hud-top {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) auto 64px;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  border-radius: 12px;
+  backdrop-filter: blur(8px);
+}
+
+.icon-square {
+  width: 30px;
+  height: 30px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid rgba(161, 174, 225, 0.18);
+  background: linear-gradient(180deg, rgba(32, 42, 72, 0.96) 0%, rgba(19, 25, 48, 0.96) 100%);
+  color: #f5f1ff;
+  cursor: pointer;
+}
+
+.icon-back {
+  cursor: pointer;
+}
+
+.hud-room {
+  min-width: 0;
+}
+
+.hud-mode {
+  font-size: 0.84rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.hud-room-id {
+  margin-top: 1px;
+  color: rgba(212, 208, 255, 0.72);
+  font-size: 0.64rem;
+}
+
+.hud-phase {
+  min-width: 88px;
+  padding: 4px 9px;
+  border-radius: 11px;
+  text-align: center;
+  border: 1px solid rgba(126, 136, 182, 0.22);
+  background: #1a2238;
+}
+
+.hud-phase-round {
+  font-size: 0.66rem;
+  font-weight: 700;
+}
+
+.hud-phase-name {
+  margin-top: 1px;
+  font-size: 0.66rem;
+  color: rgba(245, 241, 255, 0.84);
+}
+
+.hud-tools {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+}
+
+.battlefield {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr) 66px;
+  gap: 4px;
+}
+
+.seat-column {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2px;
+}
+
+.seat-card {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  padding: 2px 0 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  overflow: visible;
+  box-shadow: none;
+}
+
+.seat-avatar {
+  width: 48px;
+  height: 48px;
+  position: relative;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #16182a;
+  border: 2px solid #8a634a;
+  box-shadow: 0 0 0 1px rgba(39, 24, 28, 0.92), 0 3px 10px rgba(0, 0, 0, 0.36);
+}
+
+.seat-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 50%;
+}
+
+.seat-card-left .seat-avatar-image {
+  transform: scaleX(-1);
+}
+
+.seat-badge {
+  position: absolute;
+  top: 33px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 1px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #d9a64f 0%, #a96b23 100%);
+  color: #fff;
+  font-size: 0.48rem;
+  font-weight: 800;
+  border: 1px solid rgba(64, 37, 10, 0.38);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+  text-shadow:
+    -1px 0 #1b1207,
+    1px 0 #1b1207,
+    0 -1px #1b1207,
+    0 1px #1b1207;
+  opacity: 0.88;
+  z-index: 2;
+}
+
+.seat-card-left .seat-badge {
+  left: 7px;
+}
+
+.seat-card-right .seat-badge {
+  right: 7px;
+}
+
+.seat-role {
+  position: absolute;
+  left: 50%;
+  bottom: 1px;
+  font-size: 0.1rem !important;
+  transform: translateX(-50%);
+  min-width: 22px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: rgba(17, 23, 38, 0.72);
+  border: 1px solid rgba(116, 116, 116, 0.18);
+  font-size: 0.28rem;
+  font-weight: 700;
+  color: #bcbec8;
+  line-height: 1;
+  text-align: center;
+  letter-spacing: 0;
+  white-space: nowrap;
+  z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+  pointer-events: none;
+}
+
+/* 角色身份颜色 */
+.seat-role.role-werewolf {
+  color: #ff4444;
+  background: rgba(255, 68, 68, 0.15);
+  border-color: rgba(255, 68, 68, 0.4);
+}
+
+.seat-role.role-villager {
+  color: #4caf50;
+  background: rgba(76, 175, 80, 0.15);
+  border-color: rgba(76, 175, 80, 0.4);
+}
+
+.seat-role.role-witch {
+  color: #ab47bc;
+  background: rgba(171, 71, 188, 0.15);
+  border-color: rgba(171, 71, 188, 0.4);
+}
+
+.seat-role.role-hunter {
+  color: #ff9800;
+  background: rgba(255, 152, 0, 0.15);
+  border-color: rgba(255, 152, 0, 0.4);
+}
+
+.seat-role.role-guard {
+  color: #42a5f5;
+  background: rgba(66, 165, 245, 0.15);
+  border-color: rgba(66, 165, 245, 0.4);
+}
+
+.seat-role.role-seer {
+  color: #ffd740;
+  background: rgba(255, 215, 64, 0.15);
+  border-color: rgba(255, 215, 64, 0.4);
+}
+
+.seat-name {
+  margin-top: 4px;
+  font-size: 0.72rem;
+  color: rgba(244, 242, 255, 0.96);
+  line-height: 1.1;
+  text-align: center;
+  font-weight: 700;
+}
+
+.seat-speak-mark {
+  position: absolute;
+  right: 4px;
+  top: -1px;
+  width: 16px;
+  height: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(136, 177, 255, 0.16);
+  font-size: 0.72rem;
+}
+
+.seat-card.speaking {
+  opacity: 1;
+}
+
+.seat-card.highlighted {
+  opacity: 1;
+}
+
+.seat-card.speaking .seat-avatar {
+  box-shadow: 0 0 0 1px rgba(187, 150, 255, 0.36), 0 0 16px rgba(123, 94, 218, 0.34);
+}
+
+.seat-card.highlighted .seat-avatar {
+  box-shadow: 0 0 0 1px rgba(255, 122, 107, 0.4), 0 0 16px rgba(255, 122, 107, 0.36);
+}
+
+.seat-card.dead {
+  opacity: 0.72;
+}
+
+.seat-card.dead .seat-role,
+.seat-card.dead .seat-name {
+  color: rgba(255, 170, 170, 0.82);
+}
+
+.stage-area {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  gap: 6px;
+  padding: 4px 8px 0;
+  border-radius: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.stage-banner {
+  padding: 6px 10px;
+  border-radius: 11px;
+  background: rgba(25, 34, 61, 0.78);
+  color: rgba(224, 219, 255, 0.9);
+  font-size: 0.66rem;
+  text-align: center;
+  line-height: 1.25;
+}
+
+.stage-vote-panel {
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgba(12, 19, 40, 0.68);
+  border: 1px solid rgba(132, 142, 189, 0.22);
+}
+
+.stage-vote-title {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: #e8ddff;
+  text-align: center;
+}
+
+.stage-vote-list {
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.stage-vote-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(31, 43, 78, 0.7);
+  color: rgba(242, 239, 255, 0.9);
+  font-size: 0.58rem;
+}
+
+.stage-vote-item.eliminated {
+  background: rgba(108, 36, 42, 0.7);
+  color: #ffd4d4;
+}
+
+.stage-vote-player {
+  font-weight: 600;
+}
+
+.stage-vote-count {
+  color: #ffcf74;
+  font-weight: 700;
+}
+
+.stage-vote-result {
+  margin-top: 7px;
+  text-align: center;
+  font-size: 0.56rem;
+  color: #ffb5b5;
+}
+
+.night-flow {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.night-flow-chip {
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  color: rgba(225, 220, 255, 0.76);
+  background: #1d2640;
+  border: 1px solid rgba(126, 136, 182, 0.22);
+}
+
+.night-flow-chip.done {
+  color: #92f2bd;
+}
+
+.night-flow-chip.active {
+  color: #ffd36b;
+}
+
+.stage-visual {
+  min-height: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.action-panel {
+  display: grid;
+  grid-template-columns: 66px minmax(0, 1fr) 60px;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 14px;
+  min-height: 0;
+}
+
+.action-portrait {
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: rgba(247, 240, 255, 0.92);
+  background: linear-gradient(180deg, rgba(36, 20, 32, 0.96) 0%, rgba(25, 17, 40, 0.96) 100%);
+  border: 1px solid rgba(181, 87, 106, 0.48);
+  box-shadow: inset 0 0 0 1px rgba(255, 116, 116, 0.08);
+}
+
+.action-portrait-icon {
+  font-size: 1.45rem;
+}
+
+.action-main {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.action-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.action-subtitle {
+  margin-top: 3px;
+  color: rgba(206, 205, 255, 0.76);
+  font-size: 0.6rem;
+  line-height: 1.2;
+}
+
+.action-progress {
+  display: flex;
+  gap: 5px;
+  margin-top: 7px;
+}
+
+.action-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(118, 113, 166, 0.5);
+}
+
+.action-dot.active {
+  background: #ff9461;
+}
+
+.action-side {
+  align-self: center;
+  width: 100%;
+  min-height: 100%;
+  border-radius: 11px;
+  border: 1px solid rgba(126, 136, 182, 0.22);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: linear-gradient(180deg, rgba(28, 35, 62, 0.96) 0%, rgba(18, 24, 47, 0.96) 100%);
+}
+
+.action-side-icon {
+  font-size: 0.82rem;
+}
+
+.action-side-text {
+  font-size: 0.58rem;
+}
+
+.message-panel {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px;
+  gap: 6px;
+  align-items: stretch;
+}
+
+.message-board {
+  min-height: 0;
+  overflow: hidden;
+  padding: 7px 10px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(10, 18, 40, 0.94) 0%, rgba(7, 13, 30, 0.95) 100%);
+}
+
+.message-empty {
+  padding: 10px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: rgba(197, 192, 238, 0.6);
+}
+
+.message-empty-icon {
+  font-size: 1.4rem;
+}
+
+.message-empty-text {
+  margin-top: 6px;
+  font-size: 0.82rem;
+}
+
+.message-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.message-row {
+  display: flex;
+  gap: 5px;
+  align-items: flex-start;
+  font-size: 0.66rem;
+  line-height: 1.22;
+  word-break: break-word;
+}
+
+.message-prefix {
+  flex-shrink: 0;
+  font-weight: 700;
+}
+
+.message-content {
+  color: rgba(239, 240, 255, 0.88);
+}
+
+.message-system .message-prefix,
+.message-info .message-prefix,
+.message-phase .message-prefix { color: #f0be54; }
+.message-broadcast .message-prefix { color: #63d0ff; }
+.message-speech .message-prefix { color: #9c72ff; }
+.message-vote .message-prefix { color: #ffb34d; }
+.message-kill .message-prefix,
+.message-error .message-prefix { color: #ff7575; }
+.message-save .message-prefix { color: #71e0a6; }
+.message-warn .message-prefix { color: #ffcf66; }
+
+.quick-speak-btn {
+  border-radius: 14px;
+  color: #efeaff;
+  font-size: 0.62rem;
+  align-self: center;
+  width: 100%;
+  height: 80px;
+  padding: 6px 0;
+  background: linear-gradient(180deg, rgba(22, 28, 56, 0.96) 0%, rgba(15, 20, 42, 0.96) 100%);
+  writing-mode: vertical-rl;
+  text-orientation: upright;
+  letter-spacing: 0.12em;
+}
+
+.chat-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 58px 42px 42px;
+  gap: 6px;
+  min-height: 0;
+}
+
+.chat-input {
+  min-width: 0;
+  height: 100%;
+  padding: 0 10px;
+  border-radius: 10px;
+  color: #f5f1ff;
+  outline: none;
+  font-size: 0.68rem;
+  border-color: rgba(126, 136, 182, 0.18);
+}
+
+.chat-input::placeholder {
+  color: rgba(196, 190, 235, 0.42);
+}
+
+.chat-send,
+.chat-extra {
+  height: 100%;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #f5f1ff;
+}
+
+.chat-send {
+  background: linear-gradient(180deg, #efb54d 0%, #cf8e2a 100%);
+  color: #1f1300;
+}
+
+.chat-extra {
+  background: linear-gradient(180deg, rgba(31, 41, 72, 0.98) 0%, rgba(20, 27, 50, 0.98) 100%);
+  padding: 0;
+}
+
+.detail-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #11172a;
+  border: 2px solid #8f5f47;
+  box-shadow: 0 0 0 2px rgba(39, 24, 28, 0.9);
+}
+
+.detail-avatar-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.detail-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.detail-subtitle {
+  margin-top: 4px;
+  font-size: 0.84rem;
+  color: rgba(233, 227, 255, 0.72);
+}
+
+.detail-memory-list {
+  margin-top: 16px;
+}
+
+.detail-memory-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+
+.detail-memory-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: rgba(236, 233, 255, 0.82);
+}
+
+.detail-memory-item + .detail-memory-item {
+  margin-top: 8px;
+}
+
+.detail-empty {
+  margin-top: 16px;
+  color: rgba(202, 197, 240, 0.62);
+}
+
+.message-item-enter-active { transition: all 0.25s ease; }
+.message-item-enter-from { opacity: 0; transform: translateY(6px); }
+
+@media (max-width: 768px) {
+  .battlefield {
+    grid-template-columns: 62px minmax(0, 1fr) 62px;
+  }
+
+  .action-panel {
+    grid-template-columns: 62px minmax(0, 1fr) 54px;
+  }
+}
+
+@media (max-width: 560px) {
+  .game-screen {
+    grid-template-rows: minmax(0, 1fr) 76px 112px 36px;
+    gap: 4px;
+    padding: 4px;
+  }
+
+  .hud-top {
+    grid-template-columns: 30px minmax(0, 1fr) auto 56px;
+    padding: 4px 6px;
+  }
+
+  .icon-square {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    font-size: 0.72rem;
+  }
+
+  .hud-mode { font-size: 0.78rem; }
+  .hud-room-id,
+  .hud-phase-round,
+  .hud-phase-name,
+  .stage-banner,
+  .timer-label,
+  .action-subtitle,
+  .message-row,
+  .chat-input,
+  .chat-send,
+  .chat-extra,
+  .quick-speak-btn { font-size: 0.64rem; }
+
+  .stage-vote-title {
+    font-size: 0.58rem;
+  }
+
+  .stage-vote-item,
+  .stage-vote-result {
+    font-size: 0.52rem;
+  }
+
+  .battlefield {
+    grid-template-columns: 58px minmax(0, 1fr) 58px;
+    gap: 4px;
+  }
+
+  .seat-avatar {
+    width: 42px;
+    height: 42px;
+  }
+
+  .seat-role,
+  .seat-name {
+    font-size: 0.64rem;
+  }
+
+  .seat-role {
+    font-size: 0.26rem;
+  }
+
+  .action-panel {
+    grid-template-columns: 54px minmax(0, 1fr) 48px;
+    gap: 6px;
+    padding: 6px;
+  }
+
+  .action-title {
+    font-size: 0.74rem;
+  }
+
+  .message-panel {
+    grid-template-columns: minmax(0, 1fr) 52px;
+  }
+
+  .quick-speak-btn {
+    height: 74px;
+    font-size: 0.58rem;
+  }
+
+  .chat-bar {
+    grid-template-columns: minmax(0, 1fr) 52px 38px 38px;
+    gap: 4px;
+  }
+
+  .chat-input,
+  .chat-send,
+  .chat-extra {
+    height: 100%;
+  }
 }
 </style>
